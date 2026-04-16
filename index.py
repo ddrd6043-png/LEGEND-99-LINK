@@ -84,33 +84,29 @@ def extract_redirects(url):
 
             next_url = None
 
-            # Location header redirect
+            # 1. Location header
             if "Location" in r.headers:
                 next_url = r.headers["Location"]
 
-            # JavaScript redirect
+            # 2. JS redirects
             if not next_url:
-                match = re.search(
+                patterns = [
                     r'window\.location(?:\.href)?\s*=\s*["\'](.*?)["\']',
-                    r.text,
-                    re.I
-                )
-                if match:
-                    next_url = match.group(1)
+                    r'location\.replace\(["\'](.*?)["\']\)',
+                    r'window\.open\(["\'](.*?)["\']'
+                ]
 
-            # Meta refresh redirect
-            if not next_url:
-                match = re.search(
-                    r'http-equiv=["\']?refresh["\']?.*url=(.*?)["\']',
-                    r.text,
-                    re.I
-                )
-                if match:
-                    next_url = match.group(1)
+                for pattern in patterns:
+                    match = re.search(pattern, r.text, re.I)
+                    if match:
+                        next_url = match.group(1)
+                        break
 
             if next_url:
-                if next_url.startswith("/"):
-                    next_url = urljoin(current_url, next_url)
+                next_url = urljoin(current_url, next_url)
+
+                if next_url in redirects:
+                    break
 
                 redirects.append(next_url)
                 current_url = next_url
@@ -130,6 +126,7 @@ def webhook():
 
     update = request.json
 
+    # Callback handling
     if "callback_query" in update:
         chat_id = update["callback_query"]["message"]["chat"]["id"]
         user_id = update["callback_query"]["from"]["id"]
@@ -153,10 +150,12 @@ def webhook():
     user_id = update["message"]["from"]["id"]
     text = update["message"].get("text", "").strip()
 
+    # Join check
     if not is_joined(user_id):
         send_join_message(chat_id)
         return "ok"
 
+    # Start
     if text == "/start":
         send_message(
             chat_id,
@@ -164,6 +163,7 @@ def webhook():
         )
         return "ok"
 
+    # URL validation
     if not text.startswith("http"):
         send_message(
             chat_id,
