@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 app = Flask(__name__)
 
-BOT_TOKEN = "8275243211:AAHJhTqgsQBaTpdKqMnTb9ei0DvI76LZqLw"
+BOT_TOKEN = "8535220223:AAEMFAtTPYaOC-4rYzSFCZoj-nIcbVEGb_A"
 API = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
 channels = [
